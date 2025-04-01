@@ -93,7 +93,7 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'online_clinic',
+        'NAME': 'online_clinic_alx',
         'USER': 'willy',
         'PASSWORD': 'user1234',
         'HOST': 'localhost',

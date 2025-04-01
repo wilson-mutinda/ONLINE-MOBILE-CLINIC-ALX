@@ -97,7 +97,8 @@ def user_login(request):
     except CustomUser.DoesNotExist:
         return Response({'error': "User does not exist"}, status=status.HTTP_204_NO_CONTENT)
     
-    user.check_password(user.password, password)
+    if not user.check_password(password):
+        return Response({'error': 'Invalid Password'}, status=status.HTTP_401_UNAUTHORIZED)
 
     refresh_token = RefreshToken.for_user(user)
     access_token = str(refresh_token.access_token)
