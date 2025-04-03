@@ -11,10 +11,11 @@ class RoleSerializer(serializers.ModelSerializer):
         fields = ['id', 'name']
 
     def validate_name(self, name):
-        role_name = ['patient', 'specialist']
+        name = name.lower().strip()
+        role_name = ['admin', 'patient', 'specialist']
 
         if name not in role_name:
-            raise serializers.ValidationError("Invalid role")
+            raise serializers.ValidationError(f"Invalid Role. Allowed roles: {', '.join(role_name)}")
         return name
 
 # Customuser serializer
@@ -27,7 +28,7 @@ class CustomUSerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'first_name', 'last_name', 'username', 'email', 'role', 'password', 'confirm_password']
+        fields = ['id', 'first_name', 'last_name', 'username', 'email', 'role', 'password', 'confirm_password', 'is_admin']
 
     def validate(self, data):
         password = data.get('password')
@@ -50,14 +51,20 @@ class CustomUSerSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop('confirm_password')
 
-        # fetch role data
+        # role data
         role_data = validated_data.pop('role')
-        role_name = role_data.get('name')
+        role_name = role_data.get('name').lower().strip()
 
+        # fetch role data
         role, _ = Role.objects.get_or_create(name = role_name)
+        validated_data['role'] = role
+
+        # Automatically set is_Admin True if role is admin
+        if role_name == 'admin':
+            validated_data['is_admin'] = True
 
         # create customuser
-        user = CustomUser.objects.create_user(role = role, **validated_data)
+        user = CustomUser.objects.create_user(**validated_data)
         return user
 
 # patient serializer
@@ -176,6 +183,11 @@ class ReportSerializer(serializers.ModelSerializer):
         model = Report
         fields = ['id', 'patient', 'specialist', 'disorder', 'date_created']
 
+    def validate_patient(self, patient):
+        if not Patient.objects.filter(id=patient.id).exists():
+            raise serializers.ValidationError("Invalid Patient ID")
+        return patient
+
     def create(self, validated_data):
 
         # retreive nested objects
@@ -195,7 +207,7 @@ class ReportSerializer(serializers.ModelSerializer):
         specialization_data = specialist_data.pop('specialization')
         role_specialist, _ = Role.objects.get_or_create(name = 'specialist')
         specialist_user = CustomUser.objects.create_user(role = role_specialist, **specialist_user_data)
-        specialization, _ = specialization.objects.get_create(name = specialization_data.get('name'))
+        specialization, _ = Specialization.objects.get_or_create(name = specialization_data.get('name'))
         specialist = Specialist.objects.create(user=specialist_user, specialization = specialization, **specialist_data)
 
         # create or retreive disorder

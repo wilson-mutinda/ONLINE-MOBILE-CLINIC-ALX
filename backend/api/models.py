@@ -38,7 +38,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=200)
     last_name = models.CharField(max_length=200)
     username = models.CharField(max_length=200, unique=True)
-    role = models.OneToOneField(Role, on_delete=models.CASCADE, related_name='user', default=1)  # Changed from string to ID
+    role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name='user', null=True)  # Changed from string to ID
 
     date_joined = models.DateTimeField(default=timezone.now)
     last_login = models.DateTimeField(null=True, blank=True)

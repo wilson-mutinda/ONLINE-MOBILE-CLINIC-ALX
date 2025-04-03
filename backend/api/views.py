@@ -10,9 +10,14 @@ from .serializers import (
 )
 from rest_framework_simplejwt.tokens import RefreshToken
 
+# admin to create a role
+class IsAdmin(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.is_admin
+    
 # List and Create Roles
 @api_view(['GET', 'POST'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([IsAdmin])
 def list_create_role_view(request):
     if request.method == 'GET':
         roles = Role.objects.all()
@@ -27,7 +32,7 @@ def list_create_role_view(request):
 
 # Get single role, patch and destroy 
 @api_view(['GET', 'PATCH', 'DELETE'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([IsAdmin])
 def retreive_update_destroy_role_view(request, pk):
     role = get_object_or_404(Role, pk=pk)
     if request.method == 'GET':
@@ -244,17 +249,25 @@ def retreive_update_destroy_disorder_view(request, pk):
         return Response({'message': f'{disorder_name} deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)
     return Response({'error': 'Invalid method'}, status=status.HTTP_401_UNAUTHORIZED)
 
+# function to create a report bu specialist
+class IsSpecialist(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and hasattr(request.user, "specialist")
+
 # List and Create Reports
 @api_view(['GET', 'POST'])
+@permission_classes([IsSpecialist])
 def list_create_report_view(request):
     if request.method == 'GET':
         reports = Report.objects.all()
-        serializer = ReportSerializer(reports, many=True)
+        serializer = ReportSerializer(reports, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
     elif request.method == 'POST':
+        if not hasattr(request.user, 'specialist'):
+            return Response({'error': 'Only specialists can create reports!'}, status= status.HTTP_403_FORBIDDEN)
         serializer = ReportSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(specialist=request.user.specialist)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
