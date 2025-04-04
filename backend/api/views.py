@@ -185,6 +185,7 @@ def retreive_update_delete_specialization_view(request, pk):
 
 # List and Create Specialists
 @api_view(['GET', 'POST'])
+@permission_classes([permissions.AllowAny])
 def list_create_specialist_view(request):
     if request.method == 'GET':
         specialists = Specialist.objects.all()

@@ -145,6 +145,7 @@ class SpecialistSerializer(serializers.ModelSerializer):
 
         # fetch user data
         user_data = validated_data.pop('user')
+        user_data.pop('confirm_password')
         specialization_data = validated_data.pop('specialization')
 
         # validate specialization
